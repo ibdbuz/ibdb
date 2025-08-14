@@ -1,10 +1,23 @@
 services:
   - type: web
+    name: ibdb-backend
+    env: python
+    plan: free
+    rootDir: server
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 7279803385:AAHbUlhVJJaRO9rHUF0VFsW5iTBFxzXlONM
+      - key: TELEGRAM_CHAT_ID
+        value: 1013889724
+  - type: web
     name: ibdb-frontend
     env: node
     rootDir: client
     buildCommand: npm ci && npm run build
-    startCommand: npx serve -s dist -l $PORT
+    startCommand: npm run serve
     autoDeploy: true
     envVars:
       - key: VITE_API_BASE
