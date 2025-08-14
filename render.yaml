@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ibdb-frontend
+    env: node
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    startCommand: npx serve -s dist -l $PORT
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_BASE
+        value: https://ibdb-backend.onrender.com
+
+
