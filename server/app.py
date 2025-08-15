@@ -2,7 +2,8 @@ from dotenv import load_dotenv
 import logging
 import requests
 
-load_dotenv()  # .env fayldagi o'zgaruvchilarni yuklaydi
+# Ensure local .env overrides any existing env vars during local dev
+load_dotenv(override=True)  # .env fayldagi o'zgaruvchilarni yuklaydi
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -63,7 +64,7 @@ class OrderItem(BaseModel):
 
 
 class OrderPayload(BaseModel):
-    email: EmailStr
+    email: str = Field(..., min_length=1)  # Changed from EmailStr to str for testing
     name: str
     company: Optional[str] = None
     phone: str
@@ -188,6 +189,10 @@ async def debug_config():
         "ok": True,
         "has_token": bool(TELEGRAM_BOT_TOKEN),
         "chat_id": TELEGRAM_CHAT_ID[:6] + "***" if TELEGRAM_CHAT_ID else None,
+        # token preview to verify correct token is loaded (masked)
+        "token_preview": (
+            (TELEGRAM_BOT_TOKEN[:6] + "..." + TELEGRAM_BOT_TOKEN[-4:]) if TELEGRAM_BOT_TOKEN else None
+        ),
     }
 
 
@@ -199,6 +204,18 @@ async def debug_echo(req: Request):
         data = None
     logging.info("/debug/echo received: %s", data)
     return {"ok": True, "echo": data}
+
+
+# Extra debug to confirm the token used by the running process is valid
+@app.get("/debug/telegram/getme")
+async def debug_telegram_getme():
+    if not TELEGRAM_API:
+        raise HTTPException(status_code=500, detail="No TELEGRAM_API configured")
+    try:
+        resp = await asyncio.to_thread(requests.get, f"{TELEGRAM_API}/getMe", timeout=15)
+        return {"status": resp.status_code, "body": resp.text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- Run: uvicorn server.app:app --reload ---
